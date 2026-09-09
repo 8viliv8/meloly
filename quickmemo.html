@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>・Meloly・mini</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meloly mini">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#7a8b83">
+<style>
+:root{
+    --bg-main:#f4f3ef;--bg-surface:#faf9f6;--bg-input:#f0ede6;
+    --text-main:#2c2e31;--text-muted:#8e959e;--dim:#c8c4bc;
+    --border:#e3e0d8;--accent:#7a8b83;--red:#c0544a;
+    --font-serif:'Yu Mincho','YuMincho','Hiragino Mincho ProN',serif;
+    --font-ui:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{background:var(--bg-main);font-family:var(--font-ui);color:var(--text-main);display:flex;flex-direction:column;}
+
+.header{padding:14px 16px 10px;border-bottom:1px solid var(--border);background:var(--bg-surface);flex:none;}
+.title-row{display:flex;align-items:center;justify-content:space-between;}
+.back-unified{display:flex;align-items:center;gap:4px;cursor:pointer;}
+.back-chevron{width:18px;height:18px;color:var(--accent);}
+.title-row span{font-family:var(--font-serif);font-size:18px;color:var(--text-main);font-weight:600;}
+.title-row .icons{display:flex;gap:14px;align-items:center;}
+.title-row .icons svg{width:18px;height:18px;color:var(--text-muted);cursor:pointer;}
+
+.body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+.row-outer{position:relative;overflow:hidden;border-bottom:1px solid var(--bg-input);}
+.row-del{position:absolute;top:0;right:0;height:100%;width:80px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;}
+.row{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;cursor:pointer;background:var(--bg-surface);position:relative;transition:transform .15s ease;touch-action:pan-y;}
+.row svg{width:18px;height:18px;flex:none;color:var(--dim);margin-top:1px;}
+.row-main{flex:1;min-width:0;}
+.row-name{font-family:var(--font-ui);font-size:16px;font-weight:600;color:var(--text-main);line-height:1.4;}
+.row-preview{font-size:13.5px;color:var(--text-muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;}
+.row-count{font-size:12px;color:var(--dim);margin-top:2px;}
+.chev{width:14px;height:14px;color:var(--dim);flex:none;margin-top:2px;}
+
+.footer{padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--bg-surface);display:flex;justify-content:center;flex:none;}
+.add-btn{background:var(--accent);border:none;color:var(--bg-surface);width:50px;height:50px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-user-select:none;user-select:none;}
+.add-btn svg{width:22px;height:22px;}
+.footer-hint{font-size:10px;color:var(--dim);text-align:center;margin-top:6px;}
+
+.add-view{display:none;flex:1;flex-direction:column;padding:0;overflow:hidden;}
+.add-view.show{display:flex;}
+.add-view-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bg-input);flex:none;gap:10px;}
+.add-view-header .title-input{flex:1;border:none;outline:none;background:transparent;font-family:var(--font-ui);font-size:17px;font-weight:700;color:var(--text-main);caret-color:var(--accent);min-width:0;}
+.add-view-header .title-input::placeholder{font-weight:600;color:var(--dim);}
+.add-view-header .save-label{font-size:10px;color:var(--dim);flex:none;}
+.add-view textarea{flex:1;border:none;outline:none;background:transparent;font-family:var(--font-ui);font-size:17px;color:var(--text-main);resize:none;line-height:1.55;padding:14px 16px;caret-color:var(--accent);}
+.login-view{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;}
+.login-view p{font-size:13px;color:var(--text-muted);line-height:1.7;}
+.login-btn{background:var(--bg-surface);border:1px solid var(--border);color:var(--text-main);font-size:14px;padding:12px 24px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;}
+.login-btn svg{width:18px;height:18px;}
+
+.empty{padding:40px 16px;text-align:center;color:var(--text-muted);font-size:13px;}
+.status{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg-surface);font-size:12px;padding:6px 14px;border-radius:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:10;}
+.status.show{opacity:1;}
+
+.split-view{display:none;flex:1;flex-direction:row;overflow:hidden;}
+.split-view.show{display:flex;}
+.split-panel{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border);}
+.split-panel:last-child{border-right:none;}
+.split-panel-header{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--bg-input);flex:none;gap:4px;}
+.split-panel-header .panel-name{font-family:var(--font-ui);font-size:12px;font-weight:600;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.split-panel-header svg{width:15px;height:15px;color:var(--accent);flex:none;cursor:pointer;}
+.split-panel textarea{flex:1;border:none;outline:none;background:transparent;font-family:var(--font-ui);font-size:13.5px;color:var(--text-main);resize:none;line-height:1.5;padding:10px;caret-color:var(--accent);}
+.split-panel-placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12px;cursor:pointer;padding:10px;text-align:center;}
+
+.picker-overlay{display:none;position:fixed;inset:0;background:var(--bg-main);z-index:100;flex-direction:column;}
+.picker-overlay.show{display:flex;}
+.picker-header{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg-surface);display:flex;align-items:center;justify-content:space-between;flex:none;}
+.picker-header span{font-family:var(--font-serif);font-size:16px;font-weight:600;}
+.picker-header svg{width:18px;height:18px;color:var(--text-muted);cursor:pointer;}
+.picker-body{flex:1;overflow-y:auto;}
+.picker-back{display:none;align-items:center;gap:4px;color:var(--accent);font-size:13px;padding:10px 16px 0;cursor:pointer;}
+.picker-back.show{display:flex;}
+.picker-back svg{width:14px;height:14px;}
+</style>
+</head>
+<body>
+
+<div id="loginView" class="login-view">
+    <span style="font-family:var(--font-serif);font-size:20px;">・Meloly・mini</span>
+    <p>Googleでログインすると、<br>・Meloly・のlife memoと同期します</p>
+    <button class="login-btn" id="loginBtn">
+        <svg viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84c-.21 1.13-.85 2.09-1.81 2.73v2.27h2.92c1.71-1.57 2.69-3.88 2.69-6.64z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.27c-.81.54-1.84.87-3.04.87-2.34 0-4.33-1.58-5.04-3.71H.96v2.34C2.44 15.98 5.48 18 9 18z"/><path fill="#FBBC05" d="M3.96 10.71c-.18-.54-.28-1.11-.28-1.71s.1-1.17.28-1.71V4.96H.96A8.99 8.99 0 0 0 0 9c0 1.45.35 2.83.96 4.04l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
+        Googleでログイン
+    </button>
+</div>
+
+<div id="mainView" style="display:none;flex-direction:column;height:100%;">
+    <div class="header">
+        <div class="title-row">
+            <div class="back-unified" id="backUnified" onclick="handleUnifiedBack()">
+                <svg class="back-chevron" id="backChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none;"><path d="M15 6l-6 6 6 6"/></svg>
+                <span id="screenTitle">life memo</span>
+            </div>
+            <div class="icons">
+                <svg id="splitToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" onclick="toggleSplitMode()" style="display:none;"><rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="16" rx="1"/></svg>
+                <svg id="melodyLinkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" onclick="window.open('index.html','_blank')" style="display:none;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+                <svg id="wordripIcon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" onclick="openWordrip()"><path d="M4 9 Q4 4 8 4 Q9 2 12 3 Q15 2 16 6 Q19 6 19 9 Z"/><line x1="7" y1="12" x2="6" y2="16"/><line x1="10" y1="12" x2="9" y2="16"/><line x1="13" y1="12" x2="12" y2="16"/></svg>
+            </div>
+        </div>
+    </div>
+    <div class="body" id="listView"></div>
+    <div class="split-view" id="splitView">
+        <div class="split-panel">
+            <div class="split-panel-header">
+                <span class="panel-name" id="leftPanelName"></span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" onclick="openPicker('left')"><path d="M16 3l5 5L8 21H3v-5z"/></svg>
+            </div>
+            <div class="split-panel-placeholder" id="leftPanelPlaceholder" onclick="openPicker('left')">タップしてノートを選択</div>
+            <textarea id="leftPanelText" style="display:none;" placeholder="思いついた言葉を入力..."></textarea>
+        </div>
+        <div class="split-panel">
+            <div class="split-panel-header">
+                <span class="panel-name" id="rightPanelName"></span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" onclick="openPicker('right')"><path d="M16 3l5 5L8 21H3v-5z"/></svg>
+            </div>
+            <div class="split-panel-placeholder" id="rightPanelPlaceholder" onclick="openPicker('right')">タップしてノートを選択</div>
+            <textarea id="rightPanelText" style="display:none;" placeholder="思いついた言葉を入力..."></textarea>
+        </div>
+    </div>
+    <div class="add-view" id="addView">
+        <div class="add-view-header">
+            <input type="text" class="title-input" id="titleInput" placeholder="タイトル">
+            <span class="save-label" id="saveLabel"></span>
+        </div>
+        <textarea id="addText" placeholder="...."></textarea>
+    </div>
+    <div class="footer">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+            <button class="add-btn" id="addBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <div class="footer-hint">長押しでフォルダ作成</div>
+        </div>
+    </div>
+</div>
+
+<div class="picker-overlay" id="pickerOverlay">
+    <div class="picker-header">
+        <span id="pickerTitle">ノートを選択</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" onclick="closePicker()"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+    <div class="picker-back" id="pickerBack" onclick="pickerGoBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
+        <span>フォルダ</span>
+    </div>
+    <div class="picker-body" id="pickerList"></div>
+</div>
+
+<div class="status" id="status"></div>
+
+<script type="module">
+import { initAuth, signInWithGoogle, loadGhDataFromCloud, saveGhDataToCloud } from './modules/firebase.js';
+
+let ghData = { notes: [], folders: [] };
+let path = [];
+let uid = null;
+let editingNoteId = null;
+
+function showStatus(msg){
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(()=>el.classList.remove('show'), 1600);
+}
+
+function currentNode(){
+    let node = { name: 'life memo', notes: ghData.notes || [], folders: ghData.folders || [] };
+    let ref = ghData;
+    for(const id of path){
+        const f = (ref.folders||[]).find(x=>x.id===id);
+        if(!f) break;
+        ref = f;
+        node = f;
+    }
+    return node;
+}
+
+function escapeHtml(s){
+    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function persist(){
+    if(!uid)return;
+    const ok = await saveGhDataToCloud(uid, ghData);
+    showStatus(ok ? '保存しました' : '保存に失敗しました');
+}
+
+function attachSwipe(rowOuter, rowEl, onDelete){
+    let startX = 0, curX = 0, dragging = false, opened = false;
+    const THRESH = -60;
+    function setX(x){ rowEl.style.transform = `translateX(${x}px)`; }
+    rowEl.addEventListener('touchstart', e=>{
+        startX = e.touches[0].clientX; dragging = true;
+    }, {passive:true});
+    rowEl.addEventListener('touchmove', e=>{
+        if(!dragging)return;
+        curX = e.touches[0].clientX - startX;
+        let x = opened ? -80 + curX : curX;
+        x = Math.max(-90, Math.min(0, x));
+        setX(x);
+    }, {passive:true});
+    rowEl.addEventListener('touchend', ()=>{
+        dragging = false;
+        const finalX = opened ? -80 + curX : curX;
+        if(finalX < THRESH){ setX(-80); opened = true; }
+        else { setX(0); opened = false; }
+    });
+    rowEl.addEventListener('click', e=>{
+        if(opened){ e.preventDefault(); e.stopPropagation(); setX(0); opened = false; }
+    }, {capture:true});
+    rowOuter.querySelector('.row-del').addEventListener('click', e=>{
+        e.stopPropagation();
+        onDelete();
+    });
+}
+
+function render(){
+    const node = currentNode();
+    document.getElementById('screenTitle').textContent = node.name || 'life memo';
+    document.getElementById('backChevron').style.display = path.length>0 ? 'block' : 'none';
+    const list = document.getElementById('listView');
+    list.innerHTML = '';
+    const folders = node.folders || [];
+    const notes = node.notes || [];
+    if(folders.length===0 && notes.length===0){
+        list.innerHTML = '<div class="empty">まだメモがありません<br>右下の＋から追加してください</div>';
+        return;
+    }
+    folders.forEach(f=>{
+        const outer = document.createElement('div');
+        outer.className = 'row-outer';
+        outer.innerHTML = `
+            <div class="row-del">削除</div>
+            <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+                <div class="row-main"><div class="row-name">${escapeHtml(f.name)}</div><div class="row-count">${(f.notes||[]).length}件</div></div>
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+            </div>`;
+        const rowEl = outer.querySelector('.row');
+        rowEl.addEventListener('click', ()=>{ path.push(f.id); render(); });
+        attachSwipe(outer, rowEl, ()=>{
+            if(!confirm(`「${f.name}」フォルダを削除しますか？中のノートも消えます。`))return;
+            const idx = node.folders.indexOf(f);
+            if(idx>=0) node.folders.splice(idx,1);
+            render();
+            persist();
+        });
+        list.appendChild(outer);
+    });
+    notes.forEach(n=>{
+        const outer = document.createElement('div');
+        outer.className = 'row-outer';
+        outer.innerHTML = `
+            <div class="row-del">削除</div>
+            <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>
+                <div class="row-main"><div class="row-name">${escapeHtml(n.name)}</div><div class="row-preview">${escapeHtml((n.text||'').slice(0,40))}</div></div>
+            </div>`;
+        const rowEl = outer.querySelector('.row');
+        rowEl.addEventListener('click', ()=>{ openEdit(n); });
+        attachSwipe(outer, rowEl, ()=>{
+            if(!confirm(`「${n.name}」を削除しますか？`))return;
+            const idx = node.notes.indexOf(n);
+            if(idx>=0) node.notes.splice(idx,1);
+            render();
+            persist();
+        });
+        list.appendChild(outer);
+    });
+}
+
+let saveTimer = null;
+let pendingSave = false;
+
+let splitMode = false;
+let panelNoteId = { left: null, right: null };
+let panelSaveTimer = { left: null, right: null };
+let pickerTarget = null;
+let pickerPath = [];
+
+function findNoteById(id, node){
+    node = node || ghData;
+    for(const n of (node.notes||[])){ if(n.id===id) return n; }
+    for(const f of (node.folders||[])){ const r=findNoteById(id, f); if(r) return r; }
+    return null;
+}
+
+window.toggleSplitMode = ()=>{
+    splitMode = !splitMode;
+    document.getElementById('splitToggleIcon').style.color = splitMode ? 'var(--accent)' : 'var(--text-muted)';
+    document.getElementById('listView').style.display = splitMode ? 'none' : 'block';
+    document.getElementById('splitView').classList.toggle('show', splitMode);
+    document.getElementById('addView').classList.remove('show');
+    document.getElementById('addBtn').style.display = splitMode ? 'none' : 'flex';
+    document.querySelector('.footer-hint').style.display = splitMode ? 'none' : 'block';
+    if(splitMode){ renderPanel('left'); renderPanel('right'); }
+};
+
+function renderPanel(side){
+    const noteId = panelNoteId[side];
+    const nameEl = document.getElementById(side+'PanelName');
+    const textEl = document.getElementById(side+'PanelText');
+    const placeholderEl = document.getElementById(side+'PanelPlaceholder');
+    if(!noteId){
+        nameEl.textContent = '';
+        textEl.style.display = 'none';
+        placeholderEl.style.display = 'flex';
+        return;
+    }
+    const note = findNoteById(noteId);
+    if(!note){
+        panelNoteId[side] = null;
+        renderPanel(side);
+        return;
+    }
+    placeholderEl.style.display = 'none';
+    textEl.style.display = 'block';
+    nameEl.textContent = note.name;
+    textEl.value = note.text || '';
+}
+
+function schedulePanelSave(side){
+    clearTimeout(panelSaveTimer[side]);
+    panelSaveTimer[side] = setTimeout(()=>doPanelSave(side), 700);
+}
+async function doPanelSave(side){
+    const noteId = panelNoteId[side];
+    if(!noteId)return;
+    const note = findNoteById(noteId);
+    if(!note)return;
+    const txt = document.getElementById(side+'PanelText').value;
+    note.text = txt;
+    const trimmed = txt.trim();
+    if(trimmed) note.name = trimmed.slice(0,14).replace(/\n/g,' ');
+    document.getElementById(side+'PanelName').textContent = note.name;
+    await saveGhDataToCloud(uid, ghData);
+}
+document.getElementById('leftPanelText').addEventListener('input', ()=>schedulePanelSave('left'));
+document.getElementById('rightPanelText').addEventListener('input', ()=>schedulePanelSave('right'));
+
+window.openPicker = (side)=>{
+    pickerTarget = side;
+    pickerPath = [];
+    document.getElementById('pickerOverlay').classList.add('show');
+    renderPickerList();
+};
+window.closePicker = ()=>{
+    document.getElementById('pickerOverlay').classList.remove('show');
+};
+window.pickerGoBack = ()=>{
+    pickerPath.pop();
+    renderPickerList();
+};
+function pickerCurrentNode(){
+    let node = { name: 'life memo', notes: ghData.notes||[], folders: ghData.folders||[] };
+    let ref = ghData;
+    for(const id of pickerPath){
+        const f = (ref.folders||[]).find(x=>x.id===id);
+        if(!f) break;
+        ref = f; node = f;
+    }
+    return node;
+}
+function renderPickerList(){
+    const node = pickerCurrentNode();
+    document.getElementById('pickerTitle').textContent = node.name || 'life memo';
+    document.getElementById('pickerBack').classList.toggle('show', pickerPath.length>0);
+    const list = document.getElementById('pickerList');
+    list.innerHTML = '';
+    const folders = node.folders || [];
+    const notes = node.notes || [];
+    if(folders.length===0 && notes.length===0){
+        list.innerHTML = '<div class="empty">ノートがありません</div>';
+        return;
+    }
+    folders.forEach(f=>{
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.background = 'var(--bg-main)';
+        row.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+            <div class="row-main"><div class="row-name">${escapeHtml(f.name)}</div><div class="row-count">${(f.notes||[]).length}件</div></div>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>`;
+        row.addEventListener('click', ()=>{ pickerPath.push(f.id); renderPickerList(); });
+        list.appendChild(row);
+    });
+    notes.forEach(n=>{
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.background = 'var(--bg-main)';
+        row.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>
+            <div class="row-main"><div class="row-name">${escapeHtml(n.name)}</div><div class="row-preview">${escapeHtml((n.text||'').slice(0,40))}</div></div>`;
+        row.addEventListener('click', ()=>{
+            panelNoteId[pickerTarget] = n.id;
+            renderPanel(pickerTarget);
+            window.closePicker();
+        });
+        list.appendChild(row);
+    });
+}
+
+function showSaveLabel(text){
+    const el = document.getElementById('saveLabel');
+    if(el) el.textContent = text;
+}
+
+function scheduleAutoSave(){
+    pendingSave = true;
+    showSaveLabel('入力中...');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doSave, 700);
+}
+
+async function doSave(){
+    clearTimeout(saveTimer);
+    if(!pendingSave)return;
+    pendingSave = false;
+    const titleVal = document.getElementById('titleInput').value;
+    const txt = document.getElementById('addText').value;
+    const titleTrimmed = titleVal.trim();
+    const trimmed = txt.trim();
+    const node = currentNode();
+    if(!node.notes) node.notes = [];
+    if(!editingNoteId){
+        if(!titleTrimmed && !trimmed)return;
+        const name = titleTrimmed || trimmed.slice(0,14).replace(/\n/g,' ');
+        const newNote = { id: 'n'+Date.now(), name, text: txt, checked: true };
+        node.notes.unshift(newNote);
+        editingNoteId = newNote.id;
+    }else{
+        const existing = node.notes.find(x=>x.id===editingNoteId);
+        if(!existing)return;
+        if(!titleTrimmed && !trimmed){
+            const idx = node.notes.indexOf(existing);
+            if(idx>=0) node.notes.splice(idx,1);
+            editingNoteId = null;
+        }else{
+            existing.text = txt;
+            existing.name = titleTrimmed || trimmed.slice(0,14).replace(/\n/g,' ');
+        }
+    }
+    showSaveLabel('保存中...');
+    const ok = await saveGhDataToCloud(uid, ghData);
+    showSaveLabel(ok ? '保存しました' : '保存に失敗');
+}
+
+window.handleUnifiedBack = ()=>{
+    if(document.getElementById('addView').classList.contains('show')){
+        window.closeAddView();
+    }else if(path.length>0){
+        path.pop();
+        render();
+    }
+};
+
+window.openWordrip = ()=>{
+    const PATTERNS=['を辿る','に溶ける','が揺れる','を越えて','の中で','だけが','さえも','を抱いて','に染まる','が消える','を探して','に揺れる','が輝く','を忘れて','の果てで','に沈む','が舞う','を見つけて','に佇む','が流れる','を超えて','に溶け込む','が瞬く','を手放して','に漂う'];
+    const texts = [];
+    function collect(node){
+        (node.notes||[]).forEach(n=>{ if(n.checked && n.text) texts.push(n.text); });
+        (node.folders||[]).forEach(f=>collect(f));
+    }
+    collect(ghData);
+    const words = texts.join('\n').split(/[\n\s　、,]+/).filter(w=>w.trim().length>0);
+    try{ localStorage.setItem('wordrip_words', JSON.stringify(words.length ? words : PATTERNS)); }catch(e){}
+    window.open('wordrip.html?theme=light','_blank');
+};
+
+function openAdd(){
+    editingNoteId = null;
+    pendingSave = false;
+    showSaveLabel('');
+    document.getElementById('titleInput').value = '';
+    document.getElementById('addText').value = '';
+    document.getElementById('listView').style.display='none';
+    document.getElementById('addView').classList.add('show');
+    document.getElementById('addBtn').style.display='none';
+    document.getElementById('backChevron').style.display = 'block';
+    document.getElementById('titleInput').focus();
+}
+function openEdit(note){
+    editingNoteId = note.id;
+    pendingSave = false;
+    showSaveLabel('');
+    document.getElementById('titleInput').value = note.name || '';
+    document.getElementById('addText').value = note.text || '';
+    document.getElementById('listView').style.display='none';
+    document.getElementById('addView').classList.add('show');
+    document.getElementById('addBtn').style.display='none';
+    document.getElementById('backChevron').style.display = 'block';
+}
+window.closeAddView = async ()=>{
+    await doSave();
+    document.getElementById('titleInput').value='';
+    document.getElementById('addText').value='';
+    editingNoteId = null;
+    document.getElementById('listView').style.display='block';
+    document.getElementById('addView').classList.remove('show');
+    document.getElementById('addBtn').style.display='flex';
+    render();
+};
+document.getElementById('addText').addEventListener('input', scheduleAutoSave);
+document.getElementById('titleInput').addEventListener('input', scheduleAutoSave);
+window.reload = async ()=>{
+    showStatus('読み込み中...');
+    const data = await loadGhDataFromCloud(uid);
+    if(data){ ghData = data; path = []; render(); }
+    showStatus('最新に更新しました');
+};
+
+(function(){
+    const btn = document.getElementById('addBtn');
+    let pressTimer = null, longPressed = false;
+    function start(e){
+        longPressed = false;
+        pressTimer = setTimeout(()=>{
+            longPressed = true;
+            const name = prompt('新しいフォルダの名前を入力してください');
+            if(name && name.trim()){
+                const node = currentNode();
+                if(!node.folders) node.folders = [];
+                node.folders.push({ id:'f'+Date.now(), name:name.trim(), notes:[], folders:[] });
+                render();
+                persist();
+            }
+        }, 550);
+    }
+    function cancelPress(){ clearTimeout(pressTimer); }
+    function end(e){
+        clearTimeout(pressTimer);
+        if(!longPressed) openAdd();
+    }
+    btn.addEventListener('touchstart', start, {passive:true});
+    btn.addEventListener('touchend', end);
+    btn.addEventListener('touchmove', cancelPress, {passive:true});
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('mouseup', end);
+    btn.addEventListener('mouseleave', cancelPress);
+})();
+
+document.getElementById('loginBtn').onclick = ()=>signInWithGoogle();
+
+initAuth(
+    async (user)=>{
+        uid = user.uid;
+        document.getElementById('loginView').style.display='none';
+        document.getElementById('mainView').style.display='flex';
+        const data = await loadGhDataFromCloud(uid);
+        if(data) ghData = data;
+        render();
+    },
+    ()=>{
+        document.getElementById('loginView').style.display='flex';
+        document.getElementById('mainView').style.display='none';
+    }
+);
+</script>
+<script>
+if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+        navigator.serviceWorker.register('sw.js').catch(()=>{});
+    });
+}
+</script>
+</body>
+</html>
