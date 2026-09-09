@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>・Meloly・</title>
+<script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+ 
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-section-title">Projects</div>
+    <div id="projectTree"></div>
+    <div style="padding:8px 4px;border-top:1px solid var(--border);margin-top:auto;">
+        <button class="btn-icon" id="floppyBtn" data-tip-down="データの管理・クラウド保存" style="width:100%;justify-content:center;gap:6px;font-size:9px;color:var(--text-muted);">
+            <svg width="15" height="15" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="3" width="40" height="42" rx="4"/>
+                <rect x="10" y="3" width="22" height="16" rx="1.5" fill="none"/>
+                <rect x="13" y="7" width="8" height="8" rx="1" fill="currentColor" stroke="none"/>
+                <rect x="13" y="24" width="22" height="17" rx="1.5" fill="none"/>
+                <line x1="17" y1="28" x2="31" y2="28"/>
+                <line x1="17" y1="31" x2="31" y2="31"/>
+                <line x1="17" y1="34" x2="25" y2="34"/>
+                <path d="M36 40 L44 40 L44 48"/>
+            </svg>
+            データ管理
+        </button>
+    </div>
+</div>
+ 
+<button class="sidebar-toggle" id="sidebarToggleBtn" title="メニュー" style="display:none;">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+        <line x1="1" y1="3" x2="15" y2="3"/>
+        <line x1="1" y1="8" x2="15" y2="8"/>
+        <line x1="1" y1="13" x2="15" y2="13"/>
+    </svg>
+</button>
+ 
+<div class="app-card" id="appCard">
+ 
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <!-- 1. 三本線ボタンをtopbar内に -->
+        <button class="sidebar-toggle" id="sidebarToggleBtnInner" title="メニュー" style="position:static;z-index:auto;margin-right:4px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                <line x1="1" y1="3" x2="15" y2="3"/>
+                <line x1="1" y1="8" x2="15" y2="8"/>
+                <line x1="1" y1="13" x2="15" y2="13"/>
+            </svg>
+        </button>
+        <input type="text" class="title-input" id="projectTitle" placeholder="タイトルを入力..." value="">
+        <div class="title-spacer"></div>
+        <div class="meta-groups-wrap">
+        <div class="meta-group">
+            <span class="meta-label">bpm</span>
+            <div class="drum-input-wrap">
+                <input type="text" class="meta-input" id="bpmInput" value="72" readonly>
+                <div class="drum-picker" id="bpmPicker"><div class="drum-picker-list" id="bpmList"></div></div>
+            </div>
+        </div>
+        <div class="meta-group">
+            <span class="meta-label">key</span>
+            <div class="drum-input-wrap">
+                <input type="text" class="meta-input key-input" id="keyInput" value="F#m" readonly>
+                <div class="drum-picker" id="keyPicker"><div class="drum-picker-list" id="keyList"></div></div>
+            </div>
+        </div>
+        </div>
+        <div class="topbar-spacer"></div>
+        <!-- 編集ツール群（ハミングモード・あいまい変換(選択)・あいまい変換(全体一括)） -->
+        <div class="topbar-right">
+            <div style="position:relative;display:inline-flex;">
+                <button class="btn-icon hum-btn" id="humBtn" data-tip-down="ハミングモード（○より自由なリズム入力）">
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                        <path d="M3 13 Q5 9 7 13 Q9 9 11 13 Q13 9 15 13"/>
+                        <circle cx="17" cy="6" r="2.2" fill="currentColor" stroke="none"/>
+                        <path d="M19.2 6 L19.2 1.5 L15.5 2.6"/>
+                    </svg>
+                    <span class="hum-badge" id="humBadge">ら</span>
+                </button>
+                <div class="hum-sel" id="humSel">
+                    <button class="hum-pill active" data-c="ら">ら</button>
+                    <button class="hum-pill" data-c="た">た</button>
+                    <button class="hum-pill" data-c="る">る</button>
+                </div>
+            </div>
+            <div class="divider-v"></div>
+            <button class="btn-icon" id="morphSelTopBtn" data-tip-down="あいまい変換（選択）">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <path d="M3 5 Q5 2 9 4 Q11 1 15 3 Q18 5 16 9 Q19 11 17 15 Q14 18 10 16 Q8 19 4 17 Q1 14 3 10 Q0 8 3 5Z"/>
+                    <line x1="7" y1="8" x2="11" y2="8"/>
+                </svg>
+            </button>
+            <button class="btn-icon" id="morphAllBtn" data-tip-down="あいまい選択（全体一括）">
+                <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <path d="M3 5 Q5 2 9 4 Q11 1 15 3 Q18 5 16 9 Q19 11 17 15 Q14 18 10 16 Q8 19 4 17 Q1 14 3 10 Q0 8 3 5Z"/>
+                    <line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="11" x2="11" y2="11"/>
+                </svg>
+            </button>
+        </div>
+        <!-- UI設定ツール群 -->
+        <div class="topbar-right" style="margin-left:6px;">
+            <button class="btn-icon" id="splitBtn" data-tip-down="2画面分割">
+                <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <rect x="1" y="2" width="7" height="14" rx="1.5"/><rect x="10" y="2" width="7" height="14" rx="1.5"/>
+                </svg>
+            </button>
+            <div class="divider-v"></div>
+            <div class="font-slider-grp" data-tip-down="文字サイズ">A<input type="range" class="fine-slider" id="fontSlider" min="14" max="30" value="19">A</div>
+            <div class="divider-v"></div>
+            <button class="btn-icon" id="themeBtn" data-tip-down="テーマ切り替え">
+                <svg id="tiL" width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <circle cx="9" cy="9" r="3.5"/>
+                    <line x1="9" y1="1" x2="9" y2="3"/><line x1="9" y1="15" x2="9" y2="17"/>
+                    <line x1="1" y1="9" x2="3" y2="9"/><line x1="15" y1="9" x2="17" y2="9"/>
+                    <line x1="3.2" y1="3.2" x2="4.6" y2="4.6"/><line x1="13.4" y1="13.4" x2="14.8" y2="14.8"/>
+                    <line x1="14.8" y1="3.2" x2="13.4" y2="4.6"/><line x1="4.6" y1="13.4" x2="3.2" y2="14.8"/>
+                </svg>
+                <svg id="tiD" width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" style="display:none;">
+                    <path d="M13 3 Q3 4 3 9 Q3 15 13 16 Q6 13 6 9 Q6 5 13 3 Z"/>
+                </svg>
+            </button>
+        </div>
+        <!-- ビジュアルインスピレーション群（WORDRIP・PictureDrip・仕上げモード） -->
+        <div class="topbar-right" style="margin-left:6px;">
+            <button class="btn-icon" id="rainModeBtn" data-tip-down="WORDRIP">
+                <svg id="wiL" width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <path d="M4 9 Q4 4 8 4 Q9 2 12 3 Q15 2 16 6 Q19 6 19 9 Z"/>
+                    <line x1="7" y1="12" x2="6" y2="16"/><line x1="10" y1="12" x2="9" y2="16"/><line x1="13" y1="12" x2="12" y2="16"/>
+                </svg>
+                <svg id="wiD" width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" style="display:none;">
+                    <path d="M14 4 Q4 5 4 10 Q4 16 14 17 Q7 14 7 10 Q7 6 14 4 Z"/>
+                </svg>
+            </button>
+            <button class="btn-icon" id="pictureDripBtn" data-tip-down="PictureDrip">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <rect x="2.5" y="4" width="15" height="12" rx="1.5"/>
+                    <circle cx="7" cy="8.5" r="1.4"/>
+                    <path d="M2.5 14 L7.5 10 L11 13 L14 10.5 L17.5 13.5"/>
+                </svg>
+            </button>
+            <button class="btn-icon" id="snsModeBtn" data-tip-down="仕上げモード">
+                <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                    <ellipse cx="10" cy="10" rx="8" ry="5"/><circle cx="10" cy="10" r="2.5"/>
+                    <line x1="16" y1="4" x2="16" y2="2"/><line x1="14.5" y1="2.5" x2="17.5" y2="2.5"/>
+                </svg>
+            </button>
+        </div>
+        <!-- お知らせ（about）：独立して画面右端に -->
+        <button class="btn-icon" id="aboutBtn" data-tip-down="Melolyについて" style="margin-left:auto;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                <circle cx="8" cy="8" r="6.5"/>
+                <line x1="8" y1="7" x2="8" y2="11"/>
+                <circle cx="8" cy="5" r="0.8" fill="currentColor" stroke="none"/>
+            </svg>
+        </button>
+    </div>
+ 
+    <!-- MAIN WRAP -->
+    <div class="main-wrap" id="mainWrap">
+
+        <!-- EDITOR AREA -->
+        <div class="editor-area" id="editorArea">
+            <div class="editor-panel" id="panelLeft">
+                <div class="notebook-scroll" id="notebookLeft">
+                    <div class="block-list" id="blocksLeft"></div>
+                    <button class="btn-add" id="addBlockLeftBtn" data-tip-down="ブロックを追加">+</button>
+                </div>
+            </div>
+            <div class="panel-divider" id="divider"></div>
+            <div class="editor-panel" id="panelRight" style="display:none;">
+                <div class="notebook-scroll" id="notebookRight">
+                    <div class="block-list" id="blocksRight"></div>
+                    <button class="btn-add" id="addBlockRightBtn" data-tip-down="ブロックを追加">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM D -->
+        <div class="bottom-d" id="bottomD">
+            <div class="bottom-d-resizer" id="bottomDResizer"></div>
+            <div class="bottom-d-inner">
+                <div class="hum-hint-box" id="humHintBox" style="display:none;">
+                    <div class="hum-hint-status"><span class="hum-hint-dot"></span>ハミングモード実行中</div>
+                    <p class="hum-hint-text">「らららー」や「るるるー」と入力してください。
+入力できたら、一括変換（、やスペース区切りで複数候補）
+または選択変換（選択範囲全体を1フレーズとして変換）を押してください。
+life memoでチェックした言葉から優先的に自動で当て字されます。</p>
+                    <div class="hum-hint-btns">
+                        <button class="hum-batch-btn" id="humSingleBtn">選択変換</button>
+                        <button class="hum-batch-btn" id="humBatchBtn">一括変換</button>
+                    </div>
+                </div>
+                <div class="d-left">
+                    <div class="d-label" id="dLabel">候補ワード</div>
+                    <div class="vowel-disp" id="vowelDisp"></div>
+                    <div class="d-hiragana" id="dHiragana"></div>
+                    <div class="d-slider-col">
+                        <span class="morph-slider-label-text" id="morphSliderLabel">あいまい変換度（50%）</span>
+                        <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                            <span class="morph-slider-label">おだやか</span>
+                            <input type="range" class="morph-slider" id="morphSlider" min="0" max="4" step="1" value="2">
+                            <span class="morph-slider-label">ランダム</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-right">
+                    <div class="candidate-wrap" id="candWrap">
+                        <span class="cand-empty">歌詞を範囲選択すると、一致する言葉がここに表示されます。</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /.main-wrap -->
+
+    <!-- RIGHT COL -->
+    <div class="right-col" id="rightCol">
+        <!-- RIGHT COL RESIZER -->
+        <div class="right-col-resizer" id="rightColResizer"></div>
+        <div class="gh-pane">
+           <!-- ログイン状態表示 -->
+           <div class="gh-login-status" id="ghLoginStatus">
+               <button class="gh-login-btn" id="ghLoginBtn">
+                   <svg width="11" height="11" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                   ログインしていません
+               </button>
+               <div class="gh-user-status" id="ghUserStatus" style="display:none;">
+                   <img class="gh-user-avatar" id="ghUserAvatar" src="" alt="">
+                   <span class="gh-user-name" id="ghUserName"></span>
+                   <button class="gh-cloud-save-btn" id="ghCloudSaveBtn" data-tip-down="クラウドに保存">
+                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10a6 6 0 0 0-11.6-1.2A4 4 0 1 0 6 17h12a4 4 0 0 0 0-8z"/><line x1="12" y1="17" x2="12" y2="21"/><path d="M10 19 L12 21 L14 19"/></svg>
+                   </button>
+               </div>
+           </div>
+           <div class="pane-header">
+    <div class="pane-title" data-tip-down="日常で拾った言葉を入れてね">life memo</div>
+    <button class="gh-toggle-btn" id="ghQuickMemoBtn" data-tip-down="・Meloly・miniを開く">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="10" y1="19" x2="14" y2="19"/></svg>
+    </button>
+    <button class="gh-toggle-btn" id="ghRefreshBtn" data-tip-down="スマホからのメモを取得">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
+    </button>
+    <button class="gh-toggle-btn" id="treeSideBtn" data-tip-down="ノート管理">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <line x1="1" y1="2" x2="11" y2="2"/><line x1="1" y1="6" x2="11" y2="6"/><line x1="1" y1="10" x2="11" y2="10"/>
+        </svg>
+    </button>
+</div>
+            <div class="gh-note-header">
+                <span class="gh-note-name" id="ghNoteName">ノート1</span>
+                <span class="gh-save-status" id="ghSaveStatus"></span>
+            </div>
+            <div class="tree-split">
+                <div class="gh-editor-wrap">
+                    <textarea class="gh-textarea" id="ghInput" placeholder="好きな言葉を入れてね...右側でチェックを付けたノート内のことばが変換候補やWORDRIPモードに使われます"></textarea>
+                    <button class="gh-save-btn" id="ghSaveBtn">保存</button>
+                </div>
+                <div class="tree-side" id="treeSide"></div>
+            </div>
+        </div>
+    </div>
+ 
+</div>
+</div>
+ 
+<!-- ドラムロール -->
+<div class="drum-overlay" id="drumOverlay">
+    <div class="drum-bg" id="drumBg"></div>
+    <div class="drum-roll" id="drumRoll">
+        <div class="drum-hl" id="drumHl"></div>
+        <div class="drum-track" id="drumTrack"></div>
+    </div>
+</div>
+ 
+<!-- INLINE POPUP -->
+<div class="inline-popup" id="inlinePopup"></div>
+ 
+<!-- 起動時ログインモーダル -->
+<div class="login-prompt-overlay" id="loginPromptOverlay">
+    <div class="login-prompt-modal">
+        <div class="login-prompt-title">・Meloly・ へようこそ</div>
+        <div class="login-prompt-desc">Googleアカウントでログインすると、歌詞データがクラウドに自動保存され、どの端末からでもアクセスできます。</div>
+        <button class="login-prompt-google-btn" id="loginPromptGoogleBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Googleでログイン
+        </button>
+        <button class="login-prompt-skip-btn" id="loginPromptSkipBtn">今はしない</button>
+    </div>
+</div>
+
+<!-- FLOPPY MODAL -->
+<div class="floppy-overlay" id="floppyOverlay">
+    <div class="floppy-modal">
+        <button class="floppy-close" id="floppyClose">✕</button>
+        <div class="floppy-title">・Meloly・ data</div>
+        <div class="floppy-pc-wrap">
+            <div class="floppy-monitor">
+                <div class="floppy-screen">
+                    <div class="floppy-screen-line dim">&gt; Meloly v5_12</div>
+                    <div class="floppy-screen-line dim">&gt; ready.</div>
+                    <div class="floppy-screen-line main" id="floppyScreenMain">&gt; データを選んでください<span class="floppy-cursor"></span></div>
+                </div>
+                <div class="floppy-brand">・Meloly・</div>
+            </div>
+            <div class="floppy-neck"></div>
+            <div class="floppy-base"></div>
+            <div class="floppy-body">
+                <div class="floppy-power"></div>
+                <div class="floppy-drive">
+                    <div class="floppy-slot"></div>
+                    <div class="floppy-light" id="floppyLight"></div>
+                </div>
+                <div class="floppy-vents">
+                    <div class="floppy-vent"></div>
+                    <div class="floppy-vent"></div>
+                    <div class="floppy-vent"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Googleログインエリア -->
+        <div class="floppy-auth-area" id="floppyAuthArea">
+            <button class="floppy-google-btn" id="floppyLoginBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Googleでログイン
+            </button>
+            <div class="floppy-user-info" id="floppyUserInfo" style="display:none;">
+                <img class="floppy-user-avatar" id="floppyUserAvatar" src="" alt="">
+                <span class="floppy-user-name" id="floppyUserName"></span>
+                <button class="floppy-logout-btn" id="floppyLogoutBtn">ログアウト</button>
+            </div>
+        </div>
+        <div class="floppy-divider"></div>
+        <!-- ローカル書き出し・読み込み -->
+        <div class="floppy-btn-row">
+            <button class="floppy-action-btn" id="floppyExportBtn">
+                <svg width="38" height="38" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="3" width="40" height="42" rx="4"/>
+                    <rect x="10" y="3" width="22" height="16" rx="1.5" fill="none"/>
+                    <rect x="13" y="7" width="8" height="8" rx="1" fill="currentColor" stroke="none"/>
+                    <rect x="13" y="24" width="22" height="17" rx="1.5" fill="none"/>
+                    <line x1="17" y1="28" x2="31" y2="28"/>
+                    <line x1="17" y1="31" x2="31" y2="31"/>
+                    <line x1="17" y1="34" x2="25" y2="34"/>
+                    <path d="M36 40 L44 40 L44 48"/>
+                </svg>
+                <span>書き出し</span>
+            </button>
+            <button class="floppy-action-btn" id="floppyImportBtn">
+                <svg width="38" height="38" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 3">
+                    <rect x="4" y="3" width="40" height="42" rx="4"/>
+                    <rect x="10" y="3" width="22" height="16" rx="1.5" fill="none"/>
+                    <rect x="13" y="7" width="8" height="8" rx="1" fill="currentColor" stroke="none" stroke-dasharray="none"/>
+                    <rect x="13" y="24" width="22" height="17" rx="1.5" fill="none"/>
+                    <line x1="17" y1="28" x2="31" y2="28"/>
+                    <line x1="17" y1="31" x2="31" y2="31"/>
+                    <line x1="17" y1="34" x2="25" y2="34"/>
+                    <path d="M36 48 L44 48 L44 40" stroke-dasharray="none"/>
+                </svg>
+                <span>読み込み</span>
+            </button>
+        </div>
+        <div class="floppy-divider"></div>
+        <!-- クラウド保存・読み込み -->
+        <div class="floppy-btn-row">
+            <button class="floppy-cloud-btn" id="floppyCloudSaveBtn">
+                <svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M36 20a8 8 0 0 0-15.6-2.4A6 6 0 1 0 12 29h24a6 6 0 0 0 0-12z"/>
+                    <line x1="24" y1="34" x2="24" y2="42"/>
+                    <path d="M20 38 L24 42 L28 38"/>
+                </svg>
+                <span>クラウドへ保存</span>
+            </button>
+            <button class="floppy-cloud-btn" id="floppyCloudLoadBtn">
+                <svg width="34" height="34" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M36 20a8 8 0 0 0-15.6-2.4A6 6 0 1 0 12 29h24a6 6 0 0 0 0-12z"/>
+                    <line x1="24" y1="42" x2="24" y2="34"/>
+                    <path d="M20 36 L24 32 L28 36"/>
+                </svg>
+                <span>クラウドから読込</span>
+            </button>
+        </div>
+        <input type="file" id="floppyFileInput" accept=".zip" style="display:none;">
+    </div>
+</div>
+
+<!-- SNS -->
+<div class="sns-overlay" id="snsOverlay">
+    <div class="sns-screen" id="snsScreen"></div>
+    <div class="sns-ctrl">
+        <button class="sns-btn" id="snsReplayBtn">▶ REPLAY</button>
+        <button class="sns-btn" id="snsSkipBtn">SKIP</button>
+        <button class="sns-btn" id="snsReturnBtn">RETURN</button>
+        <div style="width:12px;flex-shrink:0;"></div>
+        <!-- 文字サイズスライダー -->
+        <div class="sns-btn sns-font-wrap">
+            <span style="font-size:9px;opacity:.7;">A</span>
+            <input type="range" id="snsFontSlider" min="14" max="40" value="24" style="width:55px;height:2px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,.3);outline:none;border-radius:1px;cursor:pointer;">
+            <span style="font-size:14px;opacity:.7;">A</span>
+        </div>
+        <button class="sns-btn sns-mode-btn" id="snsModeToggle" onclick="window._snsToggleTheme()">
+            <svg id="snsIconSun" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+                <circle cx="8" cy="8" r="3"/>
+                <line x1="8" y1="1" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15"/>
+                <line x1="1" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15" y2="8"/>
+                <line x1="3.2" y1="3.2" x2="4.6" y2="4.6"/><line x1="11.4" y1="11.4" x2="12.8" y2="12.8"/>
+                <line x1="12.8" y1="3.2" x2="11.4" y2="4.6"/><line x1="4.6" y1="11.4" x2="3.2" y2="12.8"/>
+            </svg>
+            <svg id="snsIconMoon" width="13" height="13" viewBox="0 0 16 16" fill="currentColor" stroke="none" style="display:none;" opacity="0.9">
+                <path d="M13 10 Q7 12 5 6 Q3 0 9 2 Q4 4 6 9 Q8 13 13 10Z"/>
+            </svg>
+        </button>
+    </div>
+</div>
+ 
+<template id="rainTpl">
+<style>body{margin:0;overflow:hidden;background:#05070a;}.p{position:absolute;background:#fff;border-radius:50%;opacity:0;animation:f linear infinite;}@keyframes f{0%{transform:translateY(-100px);opacity:0}50%{opacity:.6}100%{transform:translateY(110vh);opacity:0}}.m{position:absolute;bottom:20px;width:100%;text-align:center;color:rgba(255,255,255,.3);font-size:11px;letter-spacing:2px;}</style>
+<div id="pf"></div><div class="m">WORDRIP RUNNING...</div>
+<script>
+const f=document.getElementById('pf');
+for(let i=0;i<80;i++){let p=document.createElement('div');p.className='p';p.style.left=Math.random()*100+'vw';p.style.width=p.style.height=(Math.random()*2+1)+'px';p.style.animationDuration=(Math.random()*2+2)+'s';p.style.animationDelay=Math.random()*3+'s';f.appendChild(p);}
+const a=new(window.AudioContext||window.webkitAudioContext)();
+setInterval(()=>{const o=a.createOscillator();const g=a.createGain();o.type='sine';o.frequency.value=[220,277.18,329.63,440][Math.floor(Math.random()*4)];g.gain.setValueAtTime(0,a.currentTime);g.gain.linearRampToValueAtTime(.1,a.currentTime+.1);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+3);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+3.1);},4000);
+window.onunload=()=>a.close();
+</script>
+</template>
+<script type="module" src="main.js"></script>
+</body>
+</html>
