@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>PON / CUT minimal</title>
+<style>
+:root{--bg:#f1efe9;--panel:#fff;--panel2:#e8e4db;--text:#1b1b18;--muted:#6b6a63;--accent:#1f6f5c;--accent2:#b5732a;--border:#d8d4c8;--take:#dff4e8}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1210;--panel:#171c19;--panel2:#1f2620;--text:#edeae2;--muted:#8b9089;--accent:#7fe7c4;--accent2:#e8a94c;--border:#2a322c;--take:#183128}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{margin:0;padding:0;overscroll-behavior:none;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;touch-action:manipulation}
+body{-webkit-user-select:none;user-select:none;overflow-x:hidden}
+input,select{user-select:auto;-webkit-user-select:auto}
+button,label,.wave,.takewave,.timeline{touch-action:manipulation}
+.app{max-width:560px;margin:0 auto;min-height:100dvh;padding:max(18px,env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.brand{font-weight:700;letter-spacing:.08em}.ver{font-size:10px;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;margin:0 0 12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.grow{flex:1}.small{font-size:11px;color:var(--muted)}
+button,.file,select,input[type=number]{border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:999px;padding:10px 14px;font:inherit;font-size:13px}
+button{cursor:pointer}button:disabled{opacity:.35}.file input{display:none}.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;background:var(--panel2);border-radius:999px;padding:4px;margin-bottom:12px}.modes button{border:0;background:transparent;padding:9px 6px}.modes button.active{background:var(--accent);color:var(--bg)}
+.wave{height:150px;position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--border);border-radius:12px;touch-action:none;cursor:crosshair}.wave canvas{width:100%;height:100%;display:block}.playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);pointer-events:none;will-change:transform}.hint{position:absolute;left:9px;top:8px;font-size:10px;color:var(--muted);pointer-events:none;background:color-mix(in srgb,var(--panel) 82%,transparent);padding:3px 6px;border-radius:99px}
+.transport{display:flex;align-items:center;gap:10px;margin-top:10px}.round{width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center}.time{margin-left:auto;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.slim{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.control{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px}.control label{display:block;font-size:10px;color:var(--muted);margin-bottom:6px}.control input,.control select{width:100%}
+.actions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}.actions button{flex:1;min-width:72px}
+.sectionTitle{font-size:12px;font-weight:700;letter-spacing:.06em;margin-bottom:8px}.takewave{height:92px;position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--take);margin-top:8px;touch-action:none}.takewave canvas{width:100%;height:100%;display:block}.takewave .tag{position:absolute;left:8px;top:6px;font-size:10px;color:var(--muted)}.takewave .add{position:absolute;right:6px;bottom:6px;padding:6px 10px;font-size:11px}
+.timeline{min-height:88px;border:1px dashed var(--border);border-radius:12px;padding:8px;display:flex;gap:7px;overflow-x:auto;touch-action:pan-x}.slot{min-width:145px;background:var(--panel2);border-radius:10px;padding:9px;font-size:11px}.slot b{display:block;margin-bottom:4px}
+.bottom{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:9px 14px calc(9px + env(safe-area-inset-bottom))}.bottomin{max-width:560px;margin:auto;display:flex;gap:8px}.bottomin button{flex:1}
+</style>
+</head><body>
+<div class="app">
+  <div class="top"><div class="brand">PON / CUT</div><div class="ver">minimal v0.5</div></div>
+  <div class="modes"><button class="mode active" data-mode="find">FIND</button><button class="mode" data-mode="scrub">SCRUB</button><button class="mode" data-mode="slice">SLICE</button></div>
+  <div class="card">
+    <div class="row"><label class="file"><input id="file" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.aif,.aiff,.flac">音源</label><button id="demo">DEMO</button><span id="status" class="small">音源未読込</span></div>
+    <div id="wave" class="wave"><canvas id="canvas"></canvas><div id="ph" class="playhead"></div><div id="hint" class="hint">tap = play</div></div>
+    <div class="transport"><button id="play" class="round" disabled>▶</button><button id="stop" class="round" disabled>■</button><div class="time"><span id="now">00:00.000</span> / <span id="dur">00:00.000</span></div></div>
+    <div class="slim"><div class="control"><label>BUILD BPM</label><input id="bpm" type="number" min="30" max="300" value="120"></div><div class="control"><label>BEAT</label><select id="beats"><option value=".25">1/4</option><option value=".5">1/2</option><option value="1" selected>1</option><option value="2">2</option><option value="4">4</option></select></div></div>
+    <div class="actions"><button id="in" disabled>IN</button><button id="out" disabled>OUT</button><button id="auto" disabled>AUTO SLICE</button><button id="add" disabled>＋ BUILD</button></div>
+    <div id="selection" class="small" style="margin-top:8px">IN -- / OUT --</div>
+  </div>
+  <div class="card"><div class="sectionTitle">TAKES</div><div id="takes"><div class="small">Rで録音開始 / Rで停止</div></div></div>
+  <div class="card"><div class="row"><div class="sectionTitle" style="margin:0">BUILD</div><div class="grow"></div><button id="playBuild" disabled>▶</button><button id="clearBuild" disabled>CLEAR</button></div><div id="timeline" class="timeline"><div class="small">TAKEをドラッグ、または「＋」で追加</div></div></div>
+</div>
+<div class="bottom"><div class="bottomin"><button id="rec" class="primary" disabled>● TAKE</button><button id="sliceBottom" disabled>AUTO SLICE</button></div></div>
+<script>
+'use strict';
+const $=q=>document.querySelector(q);
+const wave=$('#wave'),canvas=$('#canvas'),ph=$('#ph');
+let ac=null,buffer=null,node=null,playing=false,startedAt=0,offsetAt=0,mode='find';
+let IN=null,OUT=null,slices=[],recording=false,recordStart=0,takeEvents=[],takes=[],build=[];
+let gesture=null,lastTap=0;
+function audio(){if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(!A)throw new Error('Web Audio API unavailable');ac=new A()}if(ac.state==='suspended')ac.resume()}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(t){t=Math.max(0,t||0);const m=Math.floor(t/60),s=Math.floor(t%60),ms=Math.floor((t%1)*1000);return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`}
+function currentTime(){if(!buffer)return 0;if(!playing)return offsetAt;return Math.min(buffer.duration,offsetAt+(ac.currentTime-startedAt))}
+function stopNode(){if(node){try{node.onended=null;node.stop()}catch{}node=null}playing=false}
+function startSource(t,dur=null,log=true){if(!buffer)return;audio();stopNode();offsetAt=clamp(t,0,Math.max(0,buffer.duration-.001));node=ac.createBufferSource();node.buffer=buffer;node.connect(ac.destination);startedAt=ac.currentTime;if(dur==null)node.start(0,offsetAt);else node.start(0,offsetAt,Math.min(dur,buffer.duration-offsetAt));playing=true;node.onended=()=>{playing=false};if(recording&&log)takeEvents.push({at:ac.currentTime-recordStart,o:offsetAt,d:dur||.25})}
+function seek(t,audition=true){if(!buffer)return;offsetAt=clamp(t,0,buffer.duration);if(playing)startSource(offsetAt,null,false);else if(audition)startSource(offsetAt,.055,true);updatePlayhead()}
+function reverseGrain(t,dur=.055){if(!buffer)return;audio();const sr=buffer.sampleRate,n=Math.max(1,Math.floor(dur*sr)),tmp=ac.createBuffer(1,n,sr),dst=tmp.getChannelData(0),src=buffer.getChannelData(0),st=Math.floor(clamp(t,0,buffer.duration-dur)*sr);for(let i=0;i<n;i++)dst[i]=src[Math.min(src.length-1,st+n-1-i)]||0;const s=ac.createBufferSource();s.buffer=tmp;s.connect(ac.destination);s.start();if(recording)takeEvents.push({at:ac.currentTime-recordStart,o:t,d:dur,rev:true})}
+function xToTime(x){const r=wave.getBoundingClientRect();return buffer?clamp((x-r.left)/r.width,0,1)*buffer.duration:0}
+function draw(){const r=wave.getBoundingClientRect(),w=Math.max(1,r.width),h=Math.max(1,r.height),dpr=devicePixelRatio||1;canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);const g=canvas.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);g.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--border');g.beginPath();g.moveTo(0,h/2);g.lineTo(w,h/2);g.stroke();if(!buffer)return;const d=buffer.getChannelData(0),step=Math.max(1,Math.floor(d.length/w));g.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--text');g.beginPath();for(let x=0;x<w;x++){let p=x*step,mn=1,mx=-1;for(let j=0;j<step&&p+j<d.length;j++){const v=d[p+j];if(v<mn)mn=v;if(v>mx)mx=v}g.moveTo(x,(1-mx)*h/2);g.lineTo(x,(1-mn)*h/2)}g.stroke();if(IN!=null&&OUT!=null){g.fillStyle='rgba(127,231,196,.16)';g.fillRect(IN/buffer.duration*w,0,(OUT-IN)/buffer.duration*w,h)}g.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent2');for(const t of slices){const x=t/buffer.duration*w;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}}
+function updatePlayhead(){if(!buffer)return;const r=wave.getBoundingClientRect(),x=currentTime()/buffer.duration*r.width;ph.style.transform=`translateX(${x}px)`;$('#now').textContent=fmt(currentTime())}
+function ui(){const ok=!!buffer;['play','stop','in','out','auto','add','rec','sliceBottom'].forEach(id=>$('#'+id).disabled=!ok);$('#playBuild').disabled=!build.length;$('#clearBuild').disabled=!build.length;$('#dur').textContent=ok?fmt(buffer.duration):'00:00.000';$('#rec').textContent=recording?'■ STOP':'● TAKE'}
+async function decodeFile(f){$('#status').textContent='loading…';audio();const ab=await f.arrayBuffer();let b;try{b=await ac.decodeAudioData(ab.slice(0))}catch(err){b=await new Promise((res,rej)=>ac.decodeAudioData(ab.slice(0),res,rej))}buffer=b;offsetAt=0;IN=OUT=null;slices=[];takeEvents=[];takes=[];build=[];$('#status').textContent=f.name;draw();renderTakes();renderBuild();ui()}
+$('#file').addEventListener('change',e=>{const f=e.target.files?.[0];if(f)decodeFile(f).catch(err=>$('#status').textContent='error: '+err.message)});
+$('#demo').onclick=()=>{audio();const sr=44100,b=ac.createBuffer(1,sr*6,sr),d=b.getChannelData(0);for(let i=0;i<d.length;i++){const t=i/sr,k=t%.5,s=t%.25;let v=0;if(k<.12)v+=Math.sin(2*Math.PI*75*t)*Math.exp(-k*30)*.75;if(s<.025)v+=(Math.random()*2-1)*Math.exp(-s*90)*.28;d[i]=v}buffer=b;offsetAt=0;IN=OUT=null;slices=[];takeEvents=[];takes=[];build=[];$('#status').textContent='DEMO';draw();renderTakes();renderBuild();ui()};
+$('#play').onclick=()=>{if(!buffer)return;if(playing){offsetAt=currentTime();stopNode()}else startSource(offsetAt,null,false)};$('#stop').onclick=()=>{stopNode();offsetAt=0;updatePlayhead()};
+document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x===b));$('#hint').textContent=mode==='find'?'tap / drag = seek':mode==='scrub'?'drag = scrub / reverse':'tap slice = play'});
+function segmentAt(t){if(!buffer)return null;const a=[0,...slices,buffer.duration].sort((x,y)=>x-y);for(let i=0;i<a.length-1;i++)if(t>=a[i]&&t<a[i+1])return[a[i],a[i+1]];return null}
+function pointerDown(e){if(!buffer)return;e.preventDefault();wave.setPointerCapture?.(e.pointerId);gesture={x:e.clientX,y:e.clientY,lastX:e.clientX,lastAt:performance.now(),zoomStartY:e.clientY};const t=xToTime(e.clientX);if(mode==='slice'&&slices.length){const s=segmentAt(t);if(s){IN=s[0];OUT=s[1];startSource(IN,OUT-IN,true);selectionUI()}}else if(mode==='scrub'){startSource(t,.055,true)}else{seek(t,true)}}
+function pointerMove(e){if(!gesture||!buffer)return;e.preventDefault();const dx=e.clientX-gesture.lastX,dy=e.clientY-gesture.y,now=performance.now();if(mode==='scrub'){if(now-gesture.lastAt>24&&Math.abs(dx)>1){const t=xToTime(e.clientX);if(dx<0)reverseGrain(t,.055);else startSource(t,.055,true);gesture.lastX=e.clientX;gesture.lastAt=now}return}if(Math.abs(dx)>2){seek(xToTime(e.clientX),true);gesture.lastX=e.clientX}if(Math.abs(dy)>20){}}
+function pointerUp(e){gesture=null}
+wave.addEventListener('pointerdown',pointerDown,{passive:false});window.addEventListener('pointermove',pointerMove,{passive:false});window.addEventListener('pointerup',pointerUp,{passive:false});window.addEventListener('pointercancel',pointerUp,{passive:false});
+function selectionUI(){$('#selection').textContent=`IN ${IN==null?'--':fmt(IN)} / OUT ${OUT==null?'--':fmt(OUT)}`;draw()}
+$('#in').onclick=()=>{IN=currentTime();if(OUT!=null&&OUT<IN)[IN,OUT]=[OUT,IN];selectionUI()};$('#out').onclick=()=>{OUT=currentTime();if(IN!=null&&OUT<IN)[IN,OUT]=[OUT,IN];selectionUI()};
+function autoSlice(){if(!buffer)return;const d=buffer.getChannelData(0),sr=buffer.sampleRate,hop=Math.max(64,Math.floor(sr*.008)),energy=[];for(let i=0;i<d.length-hop;i+=hop){let s=0;for(let j=0;j<hop;j++)s+=Math.abs(d[i+j]);energy.push(s/hop)}const diff=[];for(let i=1;i<energy.length;i++)diff.push(Math.max(0,energy[i]-energy[i-1]));const sorted=[...diff].sort((a,b)=>a-b),th=sorted[Math.floor(sorted.length*.93)]||0;slices=[];let last=-99;for(let i=1;i<diff.length-1;i++)if(diff[i]>th&&i-last>8){slices.push(i*hop/sr);last=i}draw()}
+$('#auto').onclick=autoSlice;$('#sliceBottom').onclick=autoSlice;
+function addSelection(){if(IN==null||OUT==null||OUT<=IN)return;build.push({name:`CUT ${build.length+1}`,buf:buffer,start:IN,dur:OUT-IN,beats:+$('#beats').value||1});renderBuild();ui()}
+$('#add').onclick=addSelection;
+async function toggleRecord(){if(!buffer)return;audio();if(!recording){takeEvents=[];recording=true;recordStart=ac.currentTime;ui();return}recording=false;ui();const tb=await renderTake();if(tb){takes.push({name:`TAKE ${takes.length+1}`,buf:tb});renderTakes()}}
+$('#rec').onclick=toggleRecord;document.addEventListener('keydown',e=>{if(e.repeat)return;if((e.key==='r'||e.key==='R')&&!['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName)){e.preventDefault();toggleRecord()}});
+async function renderTake(){if(!takeEvents.length)return null;const sr=buffer.sampleRate,total=Math.max(.2,takeEvents[takeEvents.length-1].at+.5),oc=new OfflineAudioContext(1,Math.ceil(total*sr),sr);takeEvents.forEach((h,i)=>{const next=takeEvents[i+1],dur=Math.max(.025,Math.min(h.d||.25,next?next.at-h.at:.25,buffer.duration-h.o));let s=oc.createBufferSource();if(h.rev){const n=Math.max(1,Math.floor(dur*sr)),rb=oc.createBuffer(1,n,sr),rd=rb.getChannelData(0),sd=buffer.getChannelData(0),st=Math.floor(h.o*sr);for(let k=0;k<n;k++)rd[k]=sd[Math.min(sd.length-1,st+n-1-k)]||0;s.buffer=rb;s.connect(oc.destination);s.start(h.at)}else{s.buffer=buffer;s.connect(oc.destination);s.start(h.at,h.o,dur)}});return await oc.startRendering()}
+function drawMini(buf,cv){const r=cv.parentElement.getBoundingClientRect(),w=r.width,h=r.height,dpr=devicePixelRatio||1;cv.width=w*dpr;cv.height=h*dpr;const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);const d=buf.getChannelData(0),step=Math.max(1,Math.floor(d.length/w));g.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--text');g.beginPath();for(let x=0;x<w;x++){let p=x*step,mn=1,mx=-1;for(let j=0;j<step&&p+j<d.length;j++){const v=d[p+j];if(v<mn)mn=v;if(v>mx)mx=v}g.moveTo(x,(1-mx)*h/2);g.lineTo(x,(1-mn)*h/2)}g.stroke()}
+function renderTakes(){const host=$('#takes');host.innerHTML='';if(!takes.length){host.innerHTML='<div class="small">Rで録音開始 / Rで停止</div>';return}takes.forEach((t,i)=>{const e=document.createElement('div');e.className='takewave';e.draggable=true;e.innerHTML=`<canvas></canvas><div class="tag">${t.name}</div><button class="add">＋ BUILD</button>`;e.ondragstart=ev=>{ev.dataTransfer.setData('text/plain',String(i));ev.dataTransfer.effectAllowed='copy'};e.querySelector('.add').onclick=ev=>{ev.stopPropagation();addTakeToBuild(i)};e.onclick=()=>playTake(t.buf);host.appendChild(e);drawMini(t.buf,e.querySelector('canvas'))})}
+function playTake(b){audio();const s=ac.createBufferSource();s.buffer=b;s.connect(ac.destination);s.start()}
+function addTakeToBuild(i){const t=takes[i];if(!t)return;build.push({name:t.name,buf:t.buf,start:0,dur:t.buf.duration,beats:+$('#beats').value||1});renderBuild();ui()}
+const timeline=$('#timeline');timeline.addEventListener('dragover',e=>{e.preventDefault()});timeline.addEventListener('drop',e=>{e.preventDefault();const i=+e.dataTransfer.getData('text/plain');if(Number.isFinite(i))addTakeToBuild(i)});
+function targetDur(p){return 60/(+$('#bpm').value||120)*(p.beats||1)}
+function renderBuild(){timeline.innerHTML='';if(!build.length){timeline.innerHTML='<div class="small">TAKEをドラッグ、または「＋」で追加</div>';return}build.forEach((p,i)=>{const e=document.createElement('div');e.className='slot';e.innerHTML=`<b>${p.name}</b>${p.beats} beat<br>${targetDur(p).toFixed(3)}s`;timeline.appendChild(e)})}
+$('#bpm').addEventListener('input',renderBuild);$('#beats').addEventListener('change',()=>{});
+$('#playBuild').onclick=()=>{if(!build.length)return;audio();let t=ac.currentTime+.06;for(const p of build){const target=targetDur(p),s=ac.createBufferSource();s.buffer=p.buf;s.playbackRate.value=p.dur/target;s.connect(ac.destination);s.start(t,p.start,p.dur);t+=target}};$('#clearBuild').onclick=()=>{build=[];renderBuild();ui()};
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
+document.addEventListener('dblclick',e=>{if(!['INPUT','SELECT'].includes(e.target.tagName))e.preventDefault()},{passive:false});
+document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTap<280&&!['INPUT','SELECT'].includes(e.target.tagName))e.preventDefault();lastTap=now},{passive:false});
+(function tick(){if(buffer)updatePlayhead();requestAnimationFrame(tick)})();window.addEventListener('resize',()=>{draw();renderTakes()});draw();ui();
+</script></body></html>
